@@ -1,8 +1,15 @@
 export default function Home() {
   return (
-    <main style={{ padding: 20 }}>
-      <h1>🌿 Satvik Meals</h1>
-      <p>Pure Veg • Student Friendly • Monthly Meals</p>
-    </main>
+    <section className="hero">
+      <h1>Healthy Satvik Meals for Students 🌿</h1>
+      <p>
+        Fresh, pure-veg home-style food delivered daily.
+        Affordable monthly plans designed specially for students.
+      </p>
+
+      <a href="/subscribe" className="primary-btn">
+        View Monthly Plans
+      </a>
+    </section>
   );
 }
