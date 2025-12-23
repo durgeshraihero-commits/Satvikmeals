@@ -5,16 +5,22 @@ import { useEffect, useState } from "react";
 export default function CartPage() {
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [paying, setPaying] = useState(false);
 
   useEffect(() => {
     loadCart();
   }, []);
 
   async function loadCart() {
-    const res = await fetch("/api/cart");
-    const data = await res.json();
-    setCart(data);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/cart");
+      const data = await res.json();
+      setCart(data);
+    } catch (err) {
+      alert("Failed to load cart");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function updateQty(itemId, action) {
@@ -23,34 +29,34 @@ export default function CartPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ itemId, action })
     });
+
     const data = await res.json();
     setCart(data);
   }
 
+  // 🔥 INSTAMOJO CHECKOUT
   async function proceedToInstamojo() {
-    const res = await fetch("/api/instamojo/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: "durgeshrai214@gmail.com",   // TEMP
-        phone: "9999999999",                // TEMP
-        amount: cart.items.reduce(
-          (sum, i) => sum + Number(i.price) * i.quantity,
-          0
-        ),
-        items: cart.items
-      })
-    });
+    setPaying(true);
 
-    const data = await res.json();
+    try {
+      const res = await fetch("/api/instamojo/create-payment", {
+        method: "POST"
+      });
 
-    if (data.error) {
-      alert(data.error);
-      return;
+      const data = await res.json();
+
+      if (data.error || !data.url) {
+        alert(data.error || "Payment failed");
+        setPaying(false);
+        return;
+      }
+
+      // 🚀 Redirect user to Instamojo
+      window.location.href = data.url;
+    } catch (err) {
+      alert("Unable to start payment");
+      setPaying(false);
     }
-
-    // 🚀 Redirect to Instamojo
-    window.location.href = data.paymentUrl;
   }
 
   if (loading) {
@@ -68,7 +74,7 @@ export default function CartPage() {
 
   return (
     <div style={{ maxWidth: 420, margin: "auto", padding: 16 }}>
-      <h2>🛒 Your Cart</h2>
+      <h2 style={{ marginBottom: 12 }}>🛒 Your Cart</h2>
 
       {cart.items.map(item => (
         <div
@@ -77,14 +83,30 @@ export default function CartPage() {
             display: "flex",
             gap: 12,
             padding: 12,
-            background: "#fff",
+            background: "#ffffff",
             borderRadius: 12,
-            marginBottom: 10
+            marginBottom: 10,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.08)"
           }}
         >
+          {item.image && (
+            <img
+              src={item.image}
+              alt={item.name}
+              style={{
+                width: 70,
+                height: 70,
+                borderRadius: 8,
+                objectFit: "cover"
+              }}
+            />
+          )}
+
           <div style={{ flex: 1 }}>
             <strong>{item.name}</strong>
-            <p>₹{item.price} × {item.quantity}</p>
+            <p style={{ margin: "4px 0" }}>
+              ₹{item.price} × {item.quantity}
+            </p>
 
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={() => updateQty(item.itemId, "dec")}>−</button>
@@ -95,22 +117,24 @@ export default function CartPage() {
         </div>
       ))}
 
-      <h3>Total: ₹{total}</h3>
+      <h3 style={{ marginTop: 12 }}>Total: ₹{total}</h3>
 
       <button
         style={{
           width: "100%",
-          marginTop: 12,
-          padding: 12,
-          background: "#22c55e",
+          marginTop: 14,
+          padding: 14,
+          background: paying ? "#94a3b8" : "#2563eb",
           color: "#fff",
-          borderRadius: 10,
+          borderRadius: 12,
           border: "none",
-          fontSize: 16
+          fontSize: 16,
+          cursor: paying ? "not-allowed" : "pointer"
         }}
         onClick={proceedToInstamojo}
+        disabled={paying}
       >
-        Pay Online (Instamojo) 💳
+        {paying ? "Redirecting to payment..." : "Pay Online (Instamojo) 💳"}
       </button>
     </div>
   );
