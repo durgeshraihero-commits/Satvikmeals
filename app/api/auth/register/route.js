@@ -1,59 +1,35 @@
-import dbConnect from "../../../../lib/mongodb";
-import User from "../../../../models/User";
-import { generateReferralCode } from "../../../../lib/referral";
+import dbConnect from "@/lib/mongodb";
+import User from "@/models/User";
+import bcrypt from "bcryptjs";
 
 export async function POST(req) {
   try {
     await dbConnect();
 
-    const {
-      name,
-      phone,
-      email,
-      password,
-      referredBy, // optional referral code
-    } = await req.json();
+    const { name, email, phone, password } = await req.json();
 
-    // ✅ Validation
-    if (!name || !phone || !email || !password) {
-      return Response.json(
-        { error: "All fields are required" },
-        { status: 400 }
-      );
+    if (!name || !email || !phone || !password) {
+      return Response.json({ error: "All fields required" }, { status: 400 });
     }
 
-    // ✅ Check existing user
-    const exists = await User.findOne({
-      $or: [{ phone }, { email }],
-    });
-
+    const exists = await User.findOne({ email });
     if (exists) {
-      return Response.json(
-        { error: "Phone or Email already registered" },
-        { status: 400 }
-      );
+      return Response.json({ error: "User already exists" }, { status: 400 });
     }
 
-    // ✅ Generate unique referral code for new user
-    const referralCode = generateReferralCode(name);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ✅ Create user
     await User.create({
       name,
-      phone,
       email,
-      password, // not hashed (as per your request)
-      referralCode,
-      referredBy: referredBy || null,
-      walletBalance: 0,
+      phone, // ✅ SAVED
+      password: hashedPassword
     });
 
     return Response.json({ success: true });
+
   } catch (err) {
-    console.error("REGISTER ERROR:", err);
-    return Response.json(
-      { error: "Registration failed" },
-      { status: 500 }
-    );
+    console.error(err);
+    return Response.json({ error: "Registration failed" }, { status: 500 });
   }
 }
