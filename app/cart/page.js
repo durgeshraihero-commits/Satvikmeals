@@ -5,22 +5,16 @@ import { useEffect, useState } from "react";
 export default function CartPage() {
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [paying, setPaying] = useState(false);
 
   useEffect(() => {
     loadCart();
   }, []);
 
   async function loadCart() {
-    try {
-      const res = await fetch("/api/cart");
-      const data = await res.json();
-      setCart(data);
-    } catch (err) {
-      alert("Failed to load cart");
-    } finally {
-      setLoading(false);
-    }
+    const res = await fetch("/api/cart");
+    const data = await res.json();
+    setCart(data);
+    setLoading(false);
   }
 
   async function updateQty(itemId, action) {
@@ -34,28 +28,35 @@ export default function CartPage() {
     setCart(data);
   }
 
-  // 🔥 INSTAMOJO CHECKOUT
-  async function proceedToInstamojo() {
-    setPaying(true);
-
+  async function payWithInstamojo() {
     try {
-      const res = await fetch("/api/instamojo/create-payment", {
-        method: "POST"
+      const total = cart.items.reduce(
+        (sum, i) => sum + Number(i.price) * i.quantity,
+        0
+      );
+
+      const res = await fetch("/api/instamojo/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: "durgeshrai214@gmail.com",   // TEMP (replace later with auth)
+          phone: "9999999999",                // TEMP
+          amount: total
+        })
       });
 
       const data = await res.json();
 
-      if (data.error || !data.url) {
-        alert(data.error || "Payment failed");
-        setPaying(false);
+      if (data.error) {
+        alert("Unable to start payment");
         return;
       }
 
       // 🚀 Redirect user to Instamojo
-      window.location.href = data.url;
+      window.location.href = data.paymentUrl;
+
     } catch (err) {
-      alert("Unable to start payment");
-      setPaying(false);
+      alert("Payment failed");
     }
   }
 
@@ -74,7 +75,7 @@ export default function CartPage() {
 
   return (
     <div style={{ maxWidth: 420, margin: "auto", padding: 16 }}>
-      <h2 style={{ marginBottom: 12 }}>🛒 Your Cart</h2>
+      <h2 style={{ marginBottom: 16 }}>🛒 Your Cart</h2>
 
       {cart.items.map(item => (
         <div
@@ -83,10 +84,10 @@ export default function CartPage() {
             display: "flex",
             gap: 12,
             padding: 12,
-            background: "#ffffff",
+            background: "#fff",
             borderRadius: 12,
             marginBottom: 10,
-            boxShadow: "0 4px 12px rgba(0,0,0,0.08)"
+            alignItems: "center"
           }}
         >
           {item.image && (
@@ -104,9 +105,7 @@ export default function CartPage() {
 
           <div style={{ flex: 1 }}>
             <strong>{item.name}</strong>
-            <p style={{ margin: "4px 0" }}>
-              ₹{item.price} × {item.quantity}
-            </p>
+            <p>₹{item.price}</p>
 
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={() => updateQty(item.itemId, "dec")}>−</button>
@@ -124,17 +123,15 @@ export default function CartPage() {
           width: "100%",
           marginTop: 14,
           padding: 14,
-          background: paying ? "#94a3b8" : "#2563eb",
+          background: "#22c55e",
           color: "#fff",
-          borderRadius: 12,
+          borderRadius: 10,
           border: "none",
-          fontSize: 16,
-          cursor: paying ? "not-allowed" : "pointer"
+          fontSize: 16
         }}
-        onClick={proceedToInstamojo}
-        disabled={paying}
+        onClick={payWithInstamojo}
       >
-        {paying ? "Redirecting to payment..." : "Pay Online (Instamojo) 💳"}
+        Pay Online (Instamojo) 💳
       </button>
     </div>
   );
