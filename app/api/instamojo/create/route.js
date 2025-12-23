@@ -1,39 +1,11 @@
 import { NextResponse } from "next/server";
-import dbConnect from "../../../../lib/mongodb";
-import Cart from "../../../../models/Cart";
 
 export async function POST(req) {
   try {
-    await dbConnect();
-
-    const { email, phone } = await req.json();
-
-    const cart = await Cart.findOne();
-    if (!cart || cart.items.length === 0) {
-      return NextResponse.json(
-        { error: "Cart is empty" },
-        { status: 400 }
-      );
-    }
-
-    const amount = cart.items.reduce(
-      (sum, i) => sum + Number(i.price) * i.quantity,
-      0
-    );
-
-    const payload = new URLSearchParams({
-      purpose: "SatvikMeals Order",
-      amount: amount.toString(),
-      buyer_name: email,
-      email: email,
-      phone: phone,
-      redirect_url: `${process.env.SITE_URL}/payment/success`,
-      webhook: `${process.env.SITE_URL}/api/instamojo/webhook`,
-      allow_repeated_payments: "false"
-    });
+    const { amount, email, phone } = await req.json();
 
     const response = await fetch(
-      `${process.env.INSTAMOJO_BASE_URL}/v2/payment_requests/`,
+      `${process.env.INSTAMOJO_BASE_URL}payment-requests/`,
       {
         method: "POST",
         headers: {
@@ -41,30 +13,36 @@ export async function POST(req) {
           "X-Api-Key": process.env.INSTAMOJO_API_KEY,
           "X-Auth-Token": process.env.INSTAMOJO_AUTH_TOKEN
         },
-        body: payload.toString()
+        body: new URLSearchParams({
+          purpose: "SatvikMeals Order",
+          amount: amount.toString(),
+          buyer_name: "Customer",
+          email,
+          phone,
+          redirect_url: "https://satvikmeals.onrender.com/payment/success",
+          webhook: "https://satvikmeals.onrender.com/api/instamojo/webhook",
+          send_email: "true",
+          send_sms: "true",
+          allow_repeated_payments: "false"
+        })
       }
     );
 
-    const text = await response.text();
+    const data = await response.json();
 
     if (!response.ok) {
-      console.error("Instamojo error:", text);
-      return NextResponse.json(
-        { error: "Unable to start payment" },
-        { status: 500 }
-      );
+      console.error("Instamojo error:", data);
+      return NextResponse.json({ error: data }, { status: 400 });
     }
 
-    const data = JSON.parse(text);
-
     return NextResponse.json({
-      paymentUrl: data.longurl
+      paymentUrl: data.payment_request.longurl
     });
 
   } catch (err) {
     console.error("Instamojo exception:", err);
     return NextResponse.json(
-      { error: "Payment failed" },
+      { error: "Unable to start payment" },
       { status: 500 }
     );
   }
