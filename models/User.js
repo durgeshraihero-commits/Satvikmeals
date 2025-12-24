@@ -4,9 +4,20 @@ const UserSchema = new mongoose.Schema(
   {
     name: String,
     email: { type: String, unique: true },
-    phone: { type: String, required: true }, // ✅ REQUIRED
+    phone: String,
+
     password: String,
-    walletBalance: { type: Number, default: 0 }
+
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user"   // ✅ FIX
+    },
+
+    walletBalance: {
+      type: Number,
+      default: 0
+    }
   },
   { timestamps: true }
 );

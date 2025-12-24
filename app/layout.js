@@ -1,31 +1,39 @@
-import './globals.css';
-import Link from "next/link";   // ✅ REQUIRED
+import "./globals.css";
+import Link from "next/link";
+import { getUserFromToken } from "../lib/auth";
 
 export const metadata = {
-  title: 'SatvikMeals',
-  description: 'Pure Veg • Student Friendly • Monthly Meals',
+  title: "SatvikMeals",
+  description: "Pure Veg • Student Friendly • Monthly Meals",
 };
 
 export default function RootLayout({ children }) {
+  const user = getUserFromToken();
+
   return (
     <html lang="en">
       <body>
-<header className="navbar">
-  <div className="nav-container">
-    <div className="logo">🌿 SatvikMeals</div>
+        <header className="navbar">
+          <div className="nav-container">
+            <div className="logo">🌿 SatvikMeals</div>
 
-    <nav className="nav-links">
-      <Link href="/">Home</Link>
-      <Link href="/menu">Menu</Link>
-      <Link href="/subscribe">Subscribe</Link>
-    </nav>
+            <nav className="nav-links">
+              <Link href="/">Home</Link>
+              <Link href="/menu">Menu</Link>
+              <Link href="/subscribe">Subscribe</Link>
+              {user?.role === "admin" && (
+                <Link href="/admin">Admin</Link>
+              )}
+            </nav>
 
-    <div className="nav-actions">
-      <Link href="/cart" className="cart-btn">🛒</Link>
-      <Link href="/login" className="login-btn">Login</Link>
-    </div>
-  </div>
-</header>
+            <div className="nav-actions">
+              <Link href="/cart" className="cart-btn">🛒</Link>
+              {!user && <Link href="/login" className="login-btn">Login</Link>}
+              {user && <Link href="/api/auth/logout">Logout</Link>}
+            </div>
+          </div>
+        </header>
+
         <main className="container">
           {children}
         </main>

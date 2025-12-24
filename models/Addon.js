@@ -5,7 +5,12 @@ const AddonSchema = new mongoose.Schema(
     name: String,
     price: Number,
     image: String,
-    description: String
+    description: String,
+
+    active: {
+      type: Boolean,
+      default: true
+    }
   },
   { timestamps: true }
 );

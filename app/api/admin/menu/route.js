@@ -13,7 +13,6 @@ async function checkAdmin(req) {
   }
 }
 
-/* GET → Admin sees menu */
 export async function POST(req) {
   try {
     await dbConnect();
@@ -21,12 +20,17 @@ export async function POST(req) {
 
     const body = await req.json();
 
+    // 🔒 FORCE items to be array
+    const items = Array.isArray(body.items)
+      ? body.items
+      : [body];
+
     const menu = await Menu.findOneAndUpdate(
-      {}, // only one menu
+      {},
       {
         title: "Today's Menu",
-        items: body.items,
-        published: true   // ✅ THIS WAS MISSING
+        items,
+        published: true
       },
       { upsert: true, new: true }
     );
