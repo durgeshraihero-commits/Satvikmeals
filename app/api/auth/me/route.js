@@ -1,4 +1,4 @@
-6export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 
 import { getUserFromToken } from "@/lib/auth";
 
