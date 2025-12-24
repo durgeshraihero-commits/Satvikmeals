@@ -1,32 +1,48 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+
 export default function SubscribePage() {
+  const router = useRouter();
+
+  async function requireLogin(nextPath) {
+    const res = await fetch("/api/auth/me");
+    const data = await res.json();
+
+    if (!data.user) {
+      router.push("/login");
+      return;
+    }
+
+    router.push(nextPath);
+  }
+
   return (
-    <div className="subscribe-page light-section">
+    <div style={{ padding: 20 }}>
       <h1>Choose Your Meal Plan</h1>
-      <p>
-        Pure vegetarian, hygienic, home-style meals prepared with best
-        quality ingredients.
-      </p>
 
-      <div className="card">
+      <div className="plan-card">
         <h3>Daily Meal</h3>
-        <p className="price">₹59 / meal</p>
-        <button className="btn-orange">Order Today</button>
+        <p>₹59 / meal</p>
+        <button onClick={() => requireLogin("/order/daily")}>
+          Order Today
+        </button>
       </div>
 
-      <div className="card popular">
-        <span className="badge-popular">POPULAR</span>
+      <div className="plan-card">
         <h3>1 Month Plan</h3>
-        <p className="price">₹3099</p>
-        <p className="save">Save ₹500+</p>
-        <button className="btn-green">Subscribe Now</button>
+        <p>₹3099</p>
+        <button onClick={() => requireLogin("/payment/subscribe?plan=1")}>
+          Subscribe Now
+        </button>
       </div>
 
-      <div className="card best">
-        <span className="badge-best">BEST VALUE</span>
+      <div className="plan-card">
         <h3>2 Month Plan</h3>
-        <p className="price">₹5999</p>
-        <p className="save">Save ₹1200+</p>
-        <button className="btn-green">Subscribe Now</button>
+        <p>₹5999</p>
+        <button onClick={() => requireLogin("/payment/subscribe?plan=2")}>
+          Subscribe Now
+        </button>
       </div>
     </div>
   );
